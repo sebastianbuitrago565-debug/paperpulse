@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PaperPulse AI — Autonomous Meme Coin Paper Trader</title>
+<style>
+:root{
+  --bg:#080b10; --panel:#10151d; --panel2:#151c26; --text:#edf3fb;
+  --muted:#8d9aae; --line:#263142; --green:#36e39a; --red:#ff6678;
+  --yellow:#ffd166; --blue:#5aa9ff; --purple:#a78bfa;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 20% 0,#111a28 0,#080b10 32%),var(--bg);
+font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--text)}
+button,input,select{font:inherit}
+.app{max-width:1500px;margin:auto;padding:18px}
+.top{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:21px}
+.logo{width:38px;height:38px;border:1px solid #3a4a61;border-radius:12px;display:grid;place-items:center;
+background:linear-gradient(145deg,#162235,#0d131c);box-shadow:0 0 28px #5aa9ff22}
+.logo span{font-size:20px}
+.badge{font-size:11px;padding:5px 8px;border:1px solid #315e51;color:#7ff0c1;background:#0f261f;border-radius:999px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+button{border:1px solid #324054;background:#17202c;color:var(--text);padding:10px 13px;border-radius:10px;cursor:pointer;font-weight:750}
+button:hover{filter:brightness(1.15)}
+button.primary{background:#e9f5ff;color:#07101b;border-color:#fff}
+button.buy{background:#143526;border-color:#226744;color:#7df0ba}
+button.sell{background:#3a1720;border-color:#7a293a;color:#ff98a5}
+button.ghost{background:transparent}
+.grid{display:grid;grid-template-columns:1fr 330px;gap:14px}
+.card{background:linear-gradient(180deg,#111821,#0e141c);border:1px solid var(--line);border-radius:15px;overflow:hidden;box-shadow:0 12px 40px #0004}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
+.stat{background:#0f151d;border:1px solid var(--line);padding:13px;border-radius:13px}
+.stat .k{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}
+.stat .v{font-size:22px;font-weight:900;margin-top:4px}
+.sectionHead{padding:14px;border-bottom:1px solid var(--line);display:flex;gap:10px;justify-content:space-between;align-items:center}
+.sectionHead h2{font-size:14px;margin:0}
+.filters{display:flex;gap:7px;flex-wrap:wrap}
+input,select{background:#0a0f15;color:var(--text);border:1px solid #2c394c;border-radius:9px;padding:8px 9px;outline:none}
+input{width:120px}
+.tableWrap{overflow:auto;max-height:610px}
+table{width:100%;border-collapse:collapse;min-width:1000px}
+th,td{padding:10px 11px;border-bottom:1px solid #1f2936;text-align:right;font-size:12px;white-space:nowrap}
+th{position:sticky;top:0;background:#111821;color:#8492a6;font-size:10px;text-transform:uppercase;letter-spacing:.06em;z-index:1}
+th:first-child,td:first-child{text-align:left}
+.token{display:flex;align-items:center;gap:9px}
+.coinIcon{width:34px;height:34px;border-radius:50%;background:#212b39;object-fit:cover;border:1px solid #35445a}
+.sym{font-weight:900;font-size:13px}
+.name{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.green{color:var(--green)} .red{color:var(--red)} .yellow{color:var(--yellow)}
+.score{font-weight:900}
+.score.good{color:#52e8a1}.score.mid{color:#ffd166}.score.bad{color:#ff7183}
+.pill{display:inline-block;padding:4px 7px;border-radius:999px;background:#172231;border:1px solid #2b3a4e;font-size:10px}
+.side{display:flex;flex-direction:column;gap:14px}
+.side .body{padding:13px}
+.cash{font-size:30px;font-weight:950}
+.sub{color:var(--muted);font-size:11px}
+.tradeRow{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.tradeRow input{width:100%}
+.position{padding:10px 0;border-bottom:1px solid #202a37}
+.positionTop{display:flex;justify-content:space-between;font-size:12px}
+.positionBottom{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:4px}
+.empty{padding:30px;text-align:center;color:var(--muted);font-size:12px}
+.log{max-height:250px;overflow:auto}
+.logItem{font-size:11px;border-bottom:1px solid #202a37;padding:8px 0}
+.disclaimer{margin-top:12px;color:#69778b;font-size:10px;text-align:center}
+.loading{opacity:.55;pointer-events:none}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;background:#54647a}
+.dot.live{background:var(--green);box-shadow:0 0 8px #36e39a}
+
+.aiDecision{font-weight:900;font-size:10px;padding:5px 7px;border-radius:8px;display:inline-block}
+.aiBuy{background:#123428;color:#68eaae;border:1px solid #285f49}.aiWait{background:#232919;color:#ffd166;border:1px solid #5b5a29}.aiAvoid{background:#35171d;color:#ff8694;border:1px solid #71303c}
+.ruleBox{margin-top:10px;padding:10px;border-radius:10px;background:#0b1118;border:1px solid #263142;font-size:10px;color:#91a0b5;line-height:1.5}
+
+.categoryBar{display:flex;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line);background:#0c1219;align-items:center;flex-wrap:wrap}
+.categoryTab{background:#111923;border:1px solid #2a3748;color:#95a3b7;padding:9px 13px;border-radius:10px;font-weight:850}
+.categoryTab.active{background:#e9f5ff;color:#07101b;border-color:#fff}
+.categoryCount{font-size:10px;margin-left:6px;padding:2px 6px;border-radius:999px;background:#223044;color:#c9d7e9}
+.categoryTab.active .categoryCount{background:#cbd9e7;color:#07101b}
+.viewInfo{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:11px;margin-left:auto}
+.trendRank{font-weight:950;color:var(--yellow);min-width:22px;display:inline-block}
+.hot{color:#ff9e64;font-weight:900}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:650px){.side{display:flex}.stats{grid-template-columns:1fr 1fr}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand"><div class="logo"><span>◈</span></div> PaperPulse AI <span class="badge">AUTONOMOUS PAPER MONEY · $500 START</span></div>
+    <div class="controls">
+      <button id="refreshBtn" class="primary">↻ Scan New Coins</button>
+      <button id="autoBtn" class="buy">▶ Auto Trader: ON</button>
+      <button id="resetBtn" class="ghost">Reset Account</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Account Value</div><div id="equity" class="v">$500.00</div></div>
+    <div class="stat"><div class="k">Cash</div><div id="cashStat" class="v">$500.00</div></div>
+    <div class="stat"><div class="k">Total P/L</div><div id="totalPnl" class="v">$0.00</div></div>
+    <div class="stat"><div class="k">Win Rate</div><div id="winRate" class="v">—</div></div>
+    <div class="stat"><div class="k">AI Trader</div><div id="scannerStatus" class="v" style="font-size:16px"><span class="dot"></span>Idle</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="sectionHead">
+        <h2 id="scannerTitle">TRENDING COINS</h2>
+        <div class="filters">
+          <select id="chain">
+            <option value="solana">Solana</option>
+            <option value="base">Base</option>
+            <option value="ethereum">Ethereum</option>
+            <option value="all">All</option>
+          </select>
+          <select id="newAge">
+            <option value="15">New ≤ 15m</option>
+            <option value="60" selected>New ≤ 1h</option>
+            <option value="360">New ≤ 6h</option>
+            <option value="1440">New ≤ 24h</option>
+          </select>
+          <input id="minLiq" type="number" value="10000" min="0" placeholder="Min liquidity">
+          <input id="minVol" type="number" value="10000" min="0" placeholder="Min 1h volume">
+          <select id="sort">
+            <option value="score">Best Score</option>
+            <option value="newest">Newest</option>
+            <option value="volume">1h Volume</option>
+            <option value="change">1h Change</option>
+          </select>
+        </div>
+      </div>
+      <div class="categoryBar">
+        <button class="categoryTab active" data-view="trending">🔥 Trending <span id="trendCount" class="categoryCount">0</span></button>
+        <button class="categoryTab" data-view="new">⚡ New Coins <span id="newCount" class="categoryCount">0</span></button>
+        <button class="categoryTab" data-view="all">◫ All Scanned <span id="allCount" class="categoryCount">0</span></button>
+        <div class="viewInfo" id="viewInfo">Ranked by activity + quality signals</div>
+      </div>
+      <div class="tableWrap">
+        <table>
+          <thead><tr>
+            <th>Token</th><th>Age</th><th>Price</th><th>1h</th><th>1h Vol</th><th>Liquidity</th>
+            <th>1h Buys/Sells</th><th>Social</th><th>Whale Data</th><th>AI Score</th><th>Decision</th>
+          </tr></thead>
+          <tbody id="coinRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="card">
+        <div class="sectionHead"><h2>PAPER TRADE</h2><span id="selectedLabel" class="pill">Select a coin</span></div>
+        <div class="body">
+          <div class="sub">Fake cash available</div>
+          <div id="cash" class="cash">$500.00</div>
+          <div class="tradeRow">
+            <input id="tradeAmount" type="number" min="1" value="50" placeholder="$ amount">
+            <button id="buyBtn" class="buy">BUY FAKE</button>
+          </div>
+          <div class="tradeRow">
+            <button id="sell25" class="sell">Sell 25%</button>
+            <button id="sellAll" class="sell">Sell All</button>
+          </div>
+          <div class="disclaimer">No wallet connection. No real orders. Prices are informational and may be delayed.</div><div class="ruleBox"><b>Trend-hold rules:</b> starts with exactly $500 fake cash · buys only strong trending setups · max 15% of equity per entry · max 3 positions · holds while trend stays healthy · exits when buy pressure, score, liquidity, or momentum weakens · emergency paper stop at -15%.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="sectionHead"><h2>OPEN POSITIONS</h2></div>
+        <div id="positions" class="body"></div>
+      </div>
+
+      <div class="card">
+        <div class="sectionHead"><h2>TRADE HISTORY</h2></div>
+        <div id="log" class="body log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://api.dexscreener.com';
+let coins = [];
+let selected = null;
+let activeView = 'trending';
+let state = JSON.parse(localStorage.getItem('paperpulse_state') || 'null') || {
+  startingCash:500, cash:500, positions:{}, trades:[]
+};
+
+const $ = s => document.querySelector(s);
+const fmtUsd = n => !isFinite(n) ? '—' :
+  Math.abs(n)>=1e9 ? '$'+(n/1e9).toFixed(2)+'B' :
+  Math.abs(n)>=1e6 ? '$'+(n/1e6).toFixed(2)+'M' :
+  Math.abs(n)>=1e3 ? '$'+(n/1e3).toFixed(1)+'K' : '$'+Number(n).toFixed(2);
+
+function tinyPrice(n){
+  n=Number(n); if(!n) return '—';
+  if(n>=1) return '$'+n.toFixed(4);
+  if(n>=.01) return '$'+n.toFixed(6);
+  return '$'+n.toPrecision(4);
+}
+function age(ms){
+  if(!ms) return '—';
+  const d=Date.now()-ms, m=Math.max(0,Math.floor(d/60000));
+  if(m<60) return m+'m';
+  const h=Math.floor(m/60); if(h<48) return h+'h';
+  return Math.floor(h/24)+'d';
+}
+function save(){ localStorage.setItem('paperpulse_state', JSON.stringify(state)); }
+
+function scoreCoin(p){
+  const liq = Number(p.liquidity?.usd||0);
+  const vol = Number(p.volume?.h1||0);
+  const buys = Number(p.txns?.h1?.buys||0);
+  const sells = Number(p.txns?.h1?.sells||0);
+  const pc = Number(p.priceChange?.h1||0);
+  const socials = p.info?.socials || [];
+  const hasX = socials.some(x=>['twitter','x'].includes((x.platform||'').toLowerCase()));
+  const hasTelegram = socials.some(x=>(x.platform||'').toLowerCase().includes('telegram'));
+  const hasSite = (p.info?.websites||[]).length>0;
+  const boost = Number(p.boosts?.active||0);
+
+  let s=0;
+  s += Math.min(22, Math.log10(Math.max(liq,1))*4);
+  s += Math.min(20, Math.log10(Math.max(vol,1))*3.6);
+  if(buys+sells>0) s += Math.min(18, (buys/(buys+sells))*18);
+  s += hasX ? 12 : 0;
+  s += hasTelegram ? 4 : 0;
+  s += hasSite ? 5 : 0;
+  s += Math.min(8, boost*2);
+  if(pc>0 && pc<150) s+=6;
+  if(pc>300 || pc<-70) s-=10;
+  if(liq<5000) s-=18;
+  return Math.max(0,Math.min(100,Math.round(s)));
+}
+function socialLabel(p){
+  const socials=p.info?.socials||[];
+  const x=socials.find(v=>['twitter','x'].includes((v.platform||'').toLowerCase()));
+  if(!x) return '<span class="red">No X</span>';
+  const handle=x.handle ? '@'+x.handle.replace('@','') : 'X found';
+  return `<span class="green">${handle}</span>`;
+}
+function bestPairs(pairs){
+  const map = new Map();
+  for(const p of pairs){
+    const key=p.baseToken?.address;
+    if(!key) continue;
+    const prev=map.get(key);
+    if(!prev || Number(p.liquidity?.usd||0)>Number(prev.liquidity?.usd||0)) map.set(key,p);
+  }
+  return [...map.values()];
+}
+
+async function getJson(url){
+  const r=await fetch(url);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+
+async function scan(){
+  $('#refreshBtn').disabled=true;
+  $('#scannerStatus').innerHTML='<span class="dot live"></span>Scanning';
+  document.body.classList.add('loading');
+  try{
+    const [profiles,boosts] = await Promise.all([
+      getJson(API+'/token-profiles/latest/v1'),
+      getJson(API+'/token-boosts/latest/v1')
+    ]);
+    const merged=[...(Array.isArray(profiles)?profiles:[]), ...(Array.isArray(boosts)?boosts:[])];
+    const uniq = new Map();
+    merged.forEach(x=>{
+      if(x.chainId && x.tokenAddress) uniq.set(x.chainId+':'+x.tokenAddress,x);
+    });
+    const byChain={};
+    [...uniq.values()].forEach(x=>{
+      (byChain[x.chainId]??=[]).push(x.tokenAddress);
+    });
+
+    let pairs=[];
+    for(const [chain,addresses] of Object.entries(byChain)){
+      for(let i=0;i<addresses.length;i+=30){
+        const chunk=addresses.slice(i,i+30).join(',');
+        try{
+          const d=await getJson(`${API}/tokens/v1/${encodeURIComponent(chain)}/${chunk}`);
+          if(Array.isArray(d)) pairs.push(...d);
+        }catch(e){}
+      }
+    }
+    coins=bestPairs(pairs).map(p=>({...p,_score:scoreCoin(p)}));
+    renderCoins();
+    updateMarks();
+    $('#scannerStatus').innerHTML='<span class="dot live"></span>ON · '+coins.length+' scanned';
+    autoTrade();
+  }catch(e){
+    console.error(e);
+    $('#scannerStatus').innerHTML='<span class="dot"></span>API blocked';
+    fallbackDemo();
+  }finally{
+    $('#refreshBtn').disabled=false;
+    document.body.classList.remove('loading');
+  }
+}
+
+function whaleLabel(p){
+  // A static browser page cannot safely hold private API keys. Never fabricate whale signals.
+  // If a backend later supplies verified holder/trader analytics, map it to p._whale here.
+  if(p._whale?.verified) return `<span class="green">${p._whale.label||'Verified'}</span>`;
+  return '<span class="sub">Needs API</span>';
+}
+function aiDecision(p){
+  const liq=Number(p.liquidity?.usd||0), vol=Number(p.volume?.h1||0);
+  const buys=Number(p.txns?.h1?.buys||0), sells=Number(p.txns?.h1?.sells||0);
+  const ratio=sells ? buys/sells : (buys?3:0);
+  const ch=Number(p.priceChange?.h1||0);
+  const ageMin=p.pairCreatedAt ? (Date.now()-p.pairCreatedAt)/60000 : 99999;
+  const hasX=(p.info?.socials||[]).some(x=>['twitter','x'].includes((x.platform||'').toLowerCase()));
+  if(liq<25000 || vol<30000 || ageMin<8 || ageMin>1440 || ratio<1.05 || ch>180 || ch<-55) return {t:'AVOID',c:'aiAvoid'};
+  if(p._score>=78 && liq>=25000 && vol>=30000 && ratio>=1.35 && ch>-25 && ch<120 && hasX) return {t:'BUY SETUP',c:'aiBuy'};
+  return {t:'WATCH',c:'aiWait'};
+}
+let autoEnabled=true;
+let autoLastAction={};
+function currentEquity(){
+  let v=state.cash;
+  Object.values(state.positions).forEach(p=>v+=p.qty*p.last);
+  return v;
+}
+function autoTrade(){
+  if(!autoEnabled || !coins.length) return;
+  updateMarks();
+  const now=Date.now();
+
+  // EXIT LOGIC: no fixed take-profit or timer. Hold while the trend remains healthy.
+  for(const [key,pos] of Object.entries({...state.positions})){
+    const p=coins.find(x=>positionKey(x)===key);
+    if(!p) continue;
+    const price=Number(p.priceUsd)||pos.last;
+    const avg=pos.cost/pos.qty;
+    const pnlPct=avg ? (price/avg-1)*100 : 0;
+    const heldMin=(now-(pos.openedAt||now))/60000;
+    const buys=Number(p.txns?.h1?.buys||0), sells=Number(p.txns?.h1?.sells||0);
+    const ratio=sells ? buys/sells : buys>0 ? 9 : 0;
+    const liq=Number(p.liquidity?.usd||0);
+    const vol=Number(p.volume?.h1||0);
+    const change=Number(p.priceChange?.h1||0);
+    const score=p._score||0;
+    const tScore=trendScore(p);
+
+    pos.peakPrice=Math.max(pos.peakPrice||price, price);
+    const drawdownFromPeak=pos.peakPrice ? (price/pos.peakPrice-1)*100 : 0;
+
+    let why='';
+    if(pnlPct<=-15) why='EMERGENCY STOP';
+    else if(heldMin>=4 && ratio<0.82) why='SELL PRESSURE TOOK OVER';
+    else if(heldMin>=4 && (score<48 || tScore<35)) why='TREND SCORE BROKE DOWN';
+    else if(heldMin>=4 && liq<15000) why='LIQUIDITY WEAKENED';
+    else if(heldMin>=4 && vol<12000) why='VOLUME FADED';
+    else if(pnlPct>8 && drawdownFromPeak<=-10) why='MOMENTUM ROLLED OVER';
+    else if(change<-35 && ratio<1) why='PRICE + FLOW REVERSAL';
+
+    if(why){
+      selected=p;
+      sellPctAuto(1,why);
+    } else {
+      state.positions[key]=pos;
+    }
+  }
+  save();
+
+  // ENTRY LOGIC: rank only genuinely trending candidates and buy the strongest setups first.
+  if(Object.keys(state.positions).length>=3 || state.cash<20) return;
+  const candidates=baseFiltered()
+    .filter(p=>aiDecision(p).t==='BUY SETUP' && !state.positions[positionKey(p)])
+    .sort((a,b)=>trendScore(b)-trendScore(a));
+
+  for(const p of candidates){
+    if(Object.keys(state.positions).length>=3) break;
+    if(trendScore(p)<58) continue;
+    const key=positionKey(p);
+    if(now-(autoLastAction[key]||0)<20*60000) continue;
+    const equity=currentEquity();
+    const amount=Math.min(state.cash, Math.max(20, equity*0.15));
+    if(amount<20) break;
+    selected=p;
+    buyAuto(amount,'TRENDING ENTRY · score '+trendScore(p));
+    autoLastAction[key]=now;
+  }
+}
+function buyAuto(amount,why){
+  if(!selected || amount>state.cash) return;
+  const price=Number(selected.priceUsd); if(!price) return;
+  const key=positionKey(selected), qty=amount/price;
+  const pos=state.positions[key] || {symbol:selected.baseToken.symbol,name:selected.baseToken.name,chain:selected.chainId,qty:0,cost:0,last:price,peakPrice:price,openedAt:Date.now()};
+  pos.qty+=qty; pos.cost+=amount; pos.last=price; pos.peakPrice=Math.max(pos.peakPrice||price,price); pos.openedAt=pos.openedAt||Date.now();
+  state.positions[key]=pos; state.cash-=amount;
+  state.trades.unshift({time:Date.now(),side:'BUY',symbol:pos.symbol,amount,price,pnl:null,why});
+  save(); renderAccount();
+}
+function sellPctAuto(pct,why){
+  if(!selected) return;
+  const key=positionKey(selected), pos=state.positions[key]; if(!pos) return;
+  const price=Number(selected.priceUsd)||pos.last;
+  const qty=pos.qty*pct, proceeds=qty*price, costPart=pos.cost*pct, pnl=proceeds-costPart;
+  pos.qty-=qty; pos.cost-=costPart; pos.last=price; state.cash+=proceeds;
+  state.trades.unshift({time:Date.now(),side:'SELL',symbol:pos.symbol,amount:proceeds,price,pnl,why});
+  if(pos.qty<1e-12) delete state.positions[key];
+  save(); renderAccount();
+}
+function baseFiltered(){
+  const chain=$('#chain').value, minL=+$('#minLiq').value, minV=+$('#minVol').value;
+  return coins.filter(p=>(chain==='all'||p.chainId===chain) && Number(p.liquidity?.usd||0)>=minL && Number(p.volume?.h1||0)>=minV);
+}
+function trendScore(p){
+  const tx=p.txns?.h1||{}, buys=Number(tx.buys||0), sells=Number(tx.sells||0);
+  const activity=buys+sells;
+  const ratio=sells ? buys/sells : buys>0 ? 3 : 0;
+  const vol=Number(p.volume?.h1||0), liq=Number(p.liquidity?.usd||0), change=Number(p.priceChange?.h1||0);
+  let x=p._score||0;
+  x += Math.min(25,Math.log10(Math.max(vol,1))*4);
+  x += Math.min(15,Math.log10(Math.max(activity,1))*4);
+  x += Math.min(10,Math.max(0,(ratio-1)*8));
+  if(change>5 && change<100) x+=8;
+  if(liq<10000 || change>250) x-=15;
+  return x;
+}
+function viewCoins(){
+  let a=baseFiltered();
+  if(activeView==='new'){
+    const maxAge=+$('#newAge').value*60000;
+    a=a.filter(p=>p.pairCreatedAt && Date.now()-Number(p.pairCreatedAt)<=maxAge);
+    a.sort((x,y)=>Number(y.pairCreatedAt||0)-Number(x.pairCreatedAt||0));
+  } else if(activeView==='trending'){
+    a.sort((x,y)=>trendScore(y)-trendScore(x));
+  } else {
+    const sort=$('#sort').value;
+    a.sort((x,y)=>{
+      if(sort==='newest') return Number(y.pairCreatedAt||0)-Number(x.pairCreatedAt||0);
+      if(sort==='volume') return Number(y.volume?.h1||0)-Number(x.volume?.h1||0);
+      if(sort==='change') return Number(y.priceChange?.h1||0)-Number(x.priceChange?.h1||0);
+      return y._score-x._score;
+    });
+  }
+  return a;
+}
+function filtered(){ return viewCoins(); }
+function updateCategoryCounts(){
+  const base=baseFiltered();
+  const maxAge=+$('#newAge').value*60000;
+  const n=base.filter(p=>p.pairCreatedAt && Date.now()-Number(p.pairCreatedAt)<=maxAge).length;
+  $('#allCount').textContent=base.length;
+  $('#newCount').textContent=n;
+  $('#trendCount').textContent=Math.min(base.length,50);
+}
+function renderCoins(){
+  updateCategoryCounts();
+  const list=viewCoins().slice(0,100);
+  const rows=list.map((p,index)=>{
+    const ch=Number(p.priceChange?.h1||0), tx=p.txns?.h1||{}, sc=p._score;
+    const cls=sc>=70?'good':sc>=50?'mid':'bad';
+    const key=p.chainId+':'+p.baseToken.address;
+    const icon=p.info?.imageUrl || '';
+    const rank=activeView==='trending'?`<span class="trendRank">#${index+1}</span> `:'';
+    return `<tr>
+      <td><div class="token">${icon?`<img class="coinIcon" src="${icon}" onerror="this.style.display='none'">`:`<div class="coinIcon"></div>`}
+        <div><div class="sym">${rank}${p.baseToken?.symbol||'?'}</div><div class="name">${p.baseToken?.name||''}</div></div></div></td>
+      <td>${age(p.pairCreatedAt)}</td>
+      <td>${tinyPrice(p.priceUsd)}</td>
+      <td class="${ch>=0?'green':'red'}">${ch>=0?'+':''}${ch.toFixed(1)}%</td>
+      <td>${fmtUsd(Number(p.volume?.h1||0))}</td>
+      <td>${fmtUsd(Number(p.liquidity?.usd||0))}</td>
+      <td><span class="green">${tx.buys||0}</span> / <span class="red">${tx.sells||0}</span></td>
+      <td>${socialLabel(p)}</td>
+      <td>${whaleLabel(p)}</td>
+      <td><span class="score ${cls}">${sc}/100</span></td>
+      <td><span class="aiDecision ${aiDecision(p).c}" onclick="selectCoin('${key.replaceAll("'","")}')" style="cursor:pointer">${aiDecision(p).t}</span></td>
+    </tr>`;
+  }).join('');
+  $('#coinRows').innerHTML=rows || `<tr><td colspan="11"><div class="empty">No coins match this category and your filters.</div></td></tr>`;
+  const titles={trending:'TRENDING COINS',new:'NEW COINS',all:'ALL SCANNED COINS'};
+  const info={trending:'Ranked by volume, transactions, buy pressure, liquidity, socials & AI score',new:'Newest launches inside your selected age window',all:'Every scanned coin that passes your filters'};
+  $('#scannerTitle').textContent=titles[activeView];
+  $('#viewInfo').textContent=info[activeView];
+}
+
+window.selectCoin = key=>{
+  selected=coins.find(p=>p.chainId+':'+p.baseToken.address===key);
+  if(selected) $('#selectedLabel').textContent=(selected.baseToken.symbol||'?')+' · '+tinyPrice(selected.priceUsd);
+};
+
+function positionKey(p){return p.chainId+':'+p.baseToken.address}
+function buy(){
+  if(!selected) return alert('Select a coin first.');
+  const amount=Number($('#tradeAmount').value);
+  if(!amount || amount<=0 || amount>state.cash) return alert('Enter a valid fake-dollar amount.');
+  const price=Number(selected.priceUsd);
+  if(!price) return alert('No current price for this coin.');
+  const key=positionKey(selected), qty=amount/price;
+  const pos=state.positions[key] || {symbol:selected.baseToken.symbol,name:selected.baseToken.name,chain:selected.chainId,qty:0,cost:0,last:price,peakPrice:price,openedAt:Date.now()};
+  pos.qty+=qty; pos.cost+=amount; pos.last=price;
+  state.positions[key]=pos;
+  state.cash-=amount;
+  state.trades.unshift({time:Date.now(),side:'BUY',symbol:pos.symbol,amount,price,pnl:null});
+  save(); renderAccount();
+}
+function sellPct(pct){
+  if(!selected) return alert('Select a coin first.');
+  const key=positionKey(selected), pos=state.positions[key];
+  if(!pos || pos.qty<=0) return alert('You do not have a paper position in this coin.');
+  const price=Number(selected.priceUsd)||pos.last;
+  const qty=pos.qty*pct, proceeds=qty*price, costPart=pos.cost*pct, pnl=proceeds-costPart;
+  pos.qty-=qty; pos.cost-=costPart; pos.last=price;
+  state.cash+=proceeds;
+  state.trades.unshift({time:Date.now(),side:'SELL',symbol:pos.symbol,amount:proceeds,price,pnl});
+  if(pos.qty<1e-12) delete state.positions[key];
+  save(); renderAccount();
+}
+function updateMarks(){
+  for(const [key,pos] of Object.entries(state.positions)){
+    const p=coins.find(x=>positionKey(x)===key);
+    if(p && Number(p.priceUsd)) pos.last=Number(p.priceUsd);
+  }
+  save(); renderAccount();
+}
+function renderAccount(){
+  let openValue=0, unreal=0;
+  const html=Object.entries(state.positions).map(([key,p])=>{
+    const value=p.qty*p.last, pnl=value-p.cost, pct=p.cost?100*pnl/p.cost:0;
+    openValue+=value; unreal+=pnl;
+    return `<div class="position" onclick="selectPosition('${key}')" style="cursor:pointer">
+      <div class="positionTop"><b>${p.symbol}</b><b>${fmtUsd(value)}</b></div>
+      <div class="positionBottom"><span>Cost ${fmtUsd(p.cost)}</span><span class="${pnl>=0?'green':'red'}">${pnl>=0?'+':''}${fmtUsd(pnl)} (${pct.toFixed(1)}%)</span></div>
+    </div>`;
+  }).join('');
+  $('#positions').innerHTML=html||'<div class="empty">No paper positions yet.</div>';
+  const equity=state.cash+openValue, total=equity-state.startingCash;
+  const closed=state.trades.filter(t=>t.side==='SELL');
+  const wins=closed.filter(t=>t.pnl>0).length;
+  $('#cash').textContent=fmtUsd(state.cash);
+  $('#cashStat').textContent=fmtUsd(state.cash);
+  $('#equity').textContent=fmtUsd(equity);
+  $('#totalPnl').textContent=(total>=0?'+':'')+fmtUsd(total);
+  $('#totalPnl').className='v '+(total>=0?'green':'red');
+  $('#winRate').textContent=closed.length?Math.round(wins/closed.length*100)+'%':'—';
+  $('#log').innerHTML=state.trades.slice(0,40).map(t=>`<div class="logItem">
+    <b class="${t.side==='BUY'?'green':'red'}">${t.side}</b> ${t.symbol} · ${fmtUsd(t.amount)}
+    ${t.pnl==null?'':` · <span class="${t.pnl>=0?'green':'red'}">P/L ${t.pnl>=0?'+':''}${fmtUsd(t.pnl)}</span>`}${t.why?` · <span class="sub">${t.why}</span>`:''}
+    <div class="sub">${new Date(t.time).toLocaleString()}</div></div>`).join('') || '<div class="empty">No trades yet.</div>';
+}
+window.selectPosition=key=>{
+  const p=coins.find(x=>positionKey(x)===key);
+  if(p){selected=p; $('#selectedLabel').textContent=p.baseToken.symbol+' · '+tinyPrice(p.priceUsd);}
+};
+
+function fallbackDemo(){
+  coins=[
+    {chainId:'solana',pairCreatedAt:Date.now()-18*60000,baseToken:{address:'demo1',symbol:'DEMO',name:'Demo Coin'},priceUsd:'0.00082',priceChange:{h1:21.4},volume:{h1:73500},liquidity:{usd:46200},txns:{h1:{buys:215,sells:126}},info:{socials:[{platform:'twitter',handle:'demo'}],websites:[{url:'#'}]},boosts:{active:2}},
+    {chainId:'solana',pairCreatedAt:Date.now()-49*60000,baseToken:{address:'demo2',symbol:'PAPER',name:'Paper Token'},priceUsd:'0.0031',priceChange:{h1:-8.2},volume:{h1:42900},liquidity:{usd:31800},txns:{h1:{buys:97,sells:112}},info:{socials:[],websites:[]},boosts:{active:0}}
+  ].map(p=>({...p,_score:scoreCoin(p)}));
+  renderCoins(); updateMarks();
+}
+$('#refreshBtn').onclick=scan;
+$('#buyBtn').onclick=buy;
+$('#sell25').onclick=()=>sellPct(.25);
+$('#sellAll').onclick=()=>sellPct(1);
+$('#autoBtn').onclick=()=>{autoEnabled=!autoEnabled; $('#autoBtn').textContent=autoEnabled?'▶ Auto Trader: ON':'⏸ Auto Trader: OFF'; $('#autoBtn').className=autoEnabled?'buy':'ghost'; if(autoEnabled) autoTrade();};
+$('#resetBtn').onclick=()=>{
+  if(confirm('Reset the paper account back to $500?')){
+    state={startingCash:500,cash:500,positions:{},trades:[]}; save(); renderAccount();
+  }
+};
+['#chain','#newAge','#minLiq','#minVol','#sort'].forEach(id=>$(id).addEventListener('change',renderCoins));
+document.querySelectorAll('.categoryTab').forEach(btn=>btn.addEventListener('click',()=>{
+  activeView=btn.dataset.view;
+  document.querySelectorAll('.categoryTab').forEach(b=>b.classList.toggle('active',b===btn));
+  renderCoins();
+}));
+renderAccount();
+scan();
+setInterval(scan, 60000);
+setInterval(autoTrade, 5000);
+</script>
+</body>
+</html>
